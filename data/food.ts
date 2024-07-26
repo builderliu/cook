@@ -65,6 +65,19 @@ export const vegetable: StuffItem[] = [
     name: '白菜',
     emoji: '🥬',
   },
+  {
+    name: '秋葵',
+    emoji: '🌽',
+  },
+  {
+    name: '红薯叶子',
+    emoji: '🍠',
+  },
+  { name: '红薯', emoji: '🍠' },
+  { name: '千张', emoji: '🍠' },
+  { name: '豆干', emoji: '🍠' },
+  { name: '腐竹', emoji: '🍠' },
+  { name: '海带', emoji: '🍠' },
 ]
 
 /**
@@ -111,6 +124,9 @@ export const meat: StuffItem[] = [
     name: '鱼（Todo）',
     emoji: '🐟',
   },
+  { name: '鸡翅', emoji: '🍗' },
+  { name: '鸡爪', emoji: '🍗' },
+  { name: '羊肉', emoji: '🐑' },
 ]
 
 /**
