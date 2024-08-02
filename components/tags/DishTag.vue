@@ -7,27 +7,8 @@ import { recipeHistories } from '~/composables/store/history'
 
 const props = defineProps<{
   dish: RecipeItem | DbRecipeItem
+  active: boolean
 }>()
-
-const gtm = useGtm()
-
-function triggerGtm(dish: RecipeItem) {
-  recipeHistories.value.push({
-    recipe: dish,
-    time: Date.now(),
-  })
-
-  gtm?.trackEvent({
-    event: 'click',
-    category: `dish_${dish.name}`,
-    action: 'click_recipe',
-    label: '跳转菜谱',
-  })
-  gtm?.trackEvent({
-    event: 'click_dish',
-    action: dish.name,
-  })
-}
 
 const dishLabel = computed(() => {
   const emojis = getEmojisFromStuff(props.dish.stuff)
@@ -37,10 +18,9 @@ const dishLabel = computed(() => {
 
 <template>
   <a
-    :href="dish.link || `https://www.bilibili.com/video/${dish.bv}`" target="_blank" class="dish-tag rounded tag" p="x-2"
+    class="dish-tag rounded tag" p="x-2"
     border="~ blue-200 dark:blue-800"
-    bg="blue-300 opacity-20"
-    @click="triggerGtm(dish)"
+    :bg="active ? 'green-600 opacity-90' : 'green-300 opacity-20'"
   >
     <span m="r-1" text="sm blue-700 dark:blue-200">
       {{ dishLabel }}

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { storeToRefs } from 'pinia'
+import RecipePanel from './RecipePanel.vue'
 import type { StuffItem } from '~/types'
 import { meat, staple, tools, vegetable } from '~/data/food'
 
@@ -17,6 +18,9 @@ const recipePanelRef = ref()
 const { isVisible, show } = useInvisibleElement(recipePanelRef)
 
 function toggleStuff(item: StuffItem, category = '', _e?: Event) {
+  // 选中的菜单置空 通过rStore去共享数据
+  rStore.resetActiveDish()
+
   rStore.toggleStuff(item.name)
 
   if (curStuff.value.includes(item.name))

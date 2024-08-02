@@ -18,5 +18,5 @@ const rStore = useRecipeStore()
   </p>
 
   <ChooseFood />
-  <SimpleCopyright />
+  <!-- <SimpleCopyright /> -->
 </template>

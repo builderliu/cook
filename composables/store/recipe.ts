@@ -157,6 +157,12 @@ export const useRecipeStore = defineStore('recipe', () => {
     displayedRecipe.value = await searchRecipes()
   })
 
+  const activeDish = reactive(Array(displayedRecipe.value.length).fill(false))
+
+  function resetActiveDish() {
+    activeDish.fill(false)
+  }
+
   return {
     recipesLength,
 
@@ -178,6 +184,8 @@ export const useRecipeStore = defineStore('recipe', () => {
     // useRecipe
     displayedRecipe,
     clickTool,
+    activeDish,
+    resetActiveDish,
   }
 })
 

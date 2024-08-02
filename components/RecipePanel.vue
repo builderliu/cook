@@ -8,6 +8,10 @@ const { selectedStuff, curTool } = storeToRefs(rStore)
 const showSearchInput = ref(false)
 
 const showTooltip = computed(() => !selectedStuff.value.length && !curTool.value)
+
+function toggleDish(i: number) {
+  rStore.activeDish[i] = !rStore.activeDish[i]
+}
 </script>
 
 <template>
@@ -42,7 +46,11 @@ const showTooltip = computed(() => !selectedStuff.value.length && !curTool.value
         </div>
 
         <div v-else-if="rStore.displayedRecipe.length">
-          <DishTag v-for="item, i in rStore.displayedRecipe" :key="i" :dish="item" />
+          <DishTag
+            v-for="item, i in rStore.displayedRecipe" :key="i" :dish="item"
+            :active="rStore.activeDish[i]"
+            @click="toggleDish(i)"
+          />
         </div>
 
         <div v-else text="sm">

@@ -15,7 +15,7 @@ defineProps<{
     <td>
       <a
         class="text-blue-500" font-bold
-        :href="recipe.link || `https://www.bilibili.com/video/${recipe.bv}`"
+
         target="_blank"
       >
         {{ recipe.name }}
