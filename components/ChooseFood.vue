@@ -117,5 +117,26 @@ function toggleStuff(item: StuffItem, category = '', _e?: Event) {
       <BasketButton ref="recipeBtnRef" :is-visible="isVisible" @click="show" />
     </Transition>
     <RecipePanel ref="recipePanelRef" />
+
+    <div text="xl" font="bold" p="1">
+      <span>
+        快快发送给你的专属厨师吧!
+        <br>
+        <a
+          m="2"
+          class="feedback-button"
+          @click="rStore.sendRecipe"
+        >
+          立即发送
+        </a>
+
+      </span>
+    </div>
   </div>
 </template>
+
+<style>
+.feedback-button {
+  @apply border-none inline-flex justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600;
+}
+</style>

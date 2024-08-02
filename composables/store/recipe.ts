@@ -1,7 +1,9 @@
+/* eslint-disable no-console */
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
+import axios from 'axios'
 import { db } from '../../utils/db'
 import { useAppStore } from './app'
 import type { RecipeItem, StuffItem } from '~/types'
@@ -163,6 +165,27 @@ export const useRecipeStore = defineStore('recipe', () => {
     activeDish.fill(false)
   }
 
+  async function sendRecipe() {
+    const emailData = {
+      name: activeDish.map((item, index) => item ? displayedRecipe.value[index].name : '').join(','),
+    }
+
+    console.log(emailData)
+
+    try {
+      const response = await axios.post('http://localhost:3000/send-email', emailData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log(response.data)
+    }
+    catch (error) {
+      console.error('Error sending email:', error)
+    }
+  }
+
   return {
     recipesLength,
 
@@ -186,6 +209,7 @@ export const useRecipeStore = defineStore('recipe', () => {
     clickTool,
     activeDish,
     resetActiveDish,
+    sendRecipe,
   }
 })
 
