@@ -10,7 +10,7 @@
     "build": "npm run convert && nuxt build",
     "build:static": "npm run convert && nuxt generate",
     "convert": "tsx scripts/convert.ts",
-    "dev": "nuxt dev --host",
+    "dev": "nuxt dev --host  --port 8888",
     "dev:pwa": "VITE_PLUGIN_PWA=true nuxi dev",
     "generate": "nuxt generate",
     "start:generate": "npx serve .output/public",
