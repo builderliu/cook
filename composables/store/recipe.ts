@@ -1,3 +1,4 @@
+/* eslint-disable no-alert */
 /* eslint-disable no-console */
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
@@ -7,6 +8,7 @@ import axios from 'axios'
 import { db } from '../../utils/db'
 import { useAppStore } from './app'
 import type { RecipeItem, StuffItem } from '~/types'
+import 'sweetalert2/dist/sweetalert2.min.css'
 
 const namespace = 'cook'
 
@@ -166,23 +168,28 @@ export const useRecipeStore = defineStore('recipe', () => {
   }
 
   async function sendRecipe() {
-    const emailData = {
-      name: activeDish.map((item, index) => item ? displayedRecipe.value[index].name : '').join(','),
-    }
+    if (window.confirm('确认发送邮件吗？')) {
+      const emailData = {
+        name: activeDish.map((item, index) => item ? displayedRecipe.value[index].name : '').filter(Boolean).join(','),
+      }
 
-    console.log(emailData)
+      console.log(emailData)
 
-    try {
-      const response = await axios.post('http://localhost:3000/send-email', emailData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      try {
+        const response = await axios.post('http://localhost:3001/send-email', emailData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
 
-      console.log(response.data)
-    }
-    catch (error) {
-      console.error('Error sending email:', error)
+        // console.log(response.data)
+
+        window.alert('你的专属厨师已收到！')
+      }
+      catch (error) {
+        console.error('Error sending email:', error)
+        window.alert('抱歉，发送邮件时出错。请稍后再试。')
+      }
     }
   }
 

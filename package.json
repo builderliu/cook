@@ -27,7 +27,9 @@
     "axios": "^1.7.3",
     "dayjs": "^1.11.10",
     "nodemailer": "^6.9.14",
-    "vue-about-me": "^1.2.7"
+    "sweetalert2": "^11.12.4",
+    "vue-about-me": "^1.2.7",
+    "vue-sweetalert2": "^5.0.11"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.16.0",

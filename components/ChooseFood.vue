@@ -122,14 +122,16 @@ function toggleStuff(item: StuffItem, category = '', _e?: Event) {
       <span>
         快快发送给你的专属厨师吧!
         <br>
-        <a
+        <button
           m="2"
           class="feedback-button"
           @click="rStore.sendRecipe"
         >
-          立即发送
-        </a>
-
+          立即发送至👨‍🍳
+        </button>
+        <br>
+        <br>
+        <br>
       </span>
     </div>
   </div>
@@ -137,6 +139,6 @@ function toggleStuff(item: StuffItem, category = '', _e?: Event) {
 
 <style>
 .feedback-button {
-  @apply border-none inline-flex justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600;
+  @apply border-none inline-flex justify-center rounded-md bg-blue-600 px-3 py-1.5 text-size-lg font-semibold leading-10 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600;
 }
 </style>
