@@ -1,1 +1,7 @@
 npm install express nodemailer body-parser
+
+
+
+curl -X POST http://localhost:3001/send-email \
+-H "Content-Type: application/json" \
+-d '{"to": "609141551@qq.com", "subject": "Test Email", "text": "Hello, this is a test email.", "html": "<p>Hello, this is a <strong>test email</strong>.</p>"}'

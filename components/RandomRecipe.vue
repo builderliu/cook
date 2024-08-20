@@ -23,8 +23,8 @@ const { random, randomRecipes } = useRandomRecipe(count)
 
   <div v-show="randomRecipes.length > 0">
     <div m="t-8" flex="~ col">
-      <template v-for="recipe, i in randomRecipes" :key="i">
-        <DishTag v-if="recipe" :dish="recipe" />
+      <template v-for="(recipe, index) of randomRecipes" :key="index">
+        <DishTag v-if="recipe" :dish="recipe" :active="false" />
       </template>
     </div>
   </div>

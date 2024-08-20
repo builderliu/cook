@@ -176,7 +176,7 @@ export const useRecipeStore = defineStore('recipe', () => {
       console.log(emailData)
 
       try {
-        const response = await axios.post('http://localhost:3001/send-email', emailData, {
+          await axios.post('http://47.97.220.84:8888/send-email', emailData, {
           headers: {
             'Content-Type': 'application/json',
           },
