@@ -8,6 +8,11 @@ Object.assign(process.env, {
 
 // add build time to env
 import.meta.env.VITE_APP_BUILD_TIME = new Date().getTime().toString()
+
+// GitHub Pages project sites are served from /<repo>/ , so allow overriding the base path at build time.
+const rawBaseURL = process.env.NUXT_APP_BASE_URL || '/'
+const baseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`
+
 export default defineNuxtConfig({
   ssr: false,
 
@@ -57,16 +62,19 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: false,
       routes: ['/', '/random', '/help', '/user', '/404', '/settings'],
-      ignore: ['/hi'],
+      // /cookbooks is skipped because Nuxt 3.11 doubles the /cook base path when prerendering it;
+      // the SPA fallback (404.html) still serves these routes on static hosts.
+      ignore: ['/hi', '/cookbooks'],
     },
   },
 
   app: {
+    baseURL,
     head: {
       viewport: 'width=device-width,initial-scale=1',
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon.svg` },
+        { rel: 'apple-touch-icon', href: `${baseURL}apple-touch-icon.png` },
       ],
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no' },

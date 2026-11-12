@@ -2,7 +2,8 @@ import process from 'node:process'
 import type { ModuleOptions } from '@vite-pwa/nuxt'
 import { appDescription, appName } from '../constants/index'
 
-const scope = '/'
+const rawBase = process.env.NUXT_APP_BASE_URL || '/'
+const scope = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
 
 export const pwa: ModuleOptions = {
   registerType: 'autoUpdate',

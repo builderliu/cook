@@ -55,6 +55,12 @@ pnpm dev
 
 ## 部署
 
+### GitHub Pages
+
+推送到 `1.0` 分支（或在 Actions 中手动运行 `Deploy to GitHub Pages`）后，工作流会自动执行静态构建并部署到 GitHub Pages。
+
+首次部署时，请在仓库 `Settings -> Pages` 将 Source 设为 `GitHub Actions`。站点地址为 `https://<username>.github.io/<repo>/`，构建时会自动把 `NUXT_APP_BASE_URL` 设为对应的子路径。
+
 ### Docker
 
 ```bash
