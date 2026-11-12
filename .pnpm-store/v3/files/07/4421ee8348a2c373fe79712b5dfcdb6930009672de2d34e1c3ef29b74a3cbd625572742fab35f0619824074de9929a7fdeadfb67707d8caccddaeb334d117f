@@ -1,0 +1,25 @@
+interface BottomMenuItem {
+    title: string;
+    /**
+     * @description icon class
+     */
+    icon: string;
+    /**
+     * @description active icon class
+     */
+    activeIcon?: string;
+    /**
+     * @description RouterLink to
+     */
+    to?: string;
+    /**
+     * onClick
+     * @returns
+     */
+    onClick?: (...args: any[]) => void;
+}
+
+declare const _dirname: string;
+declare const componentsDir: string;
+
+export { type BottomMenuItem, _dirname, componentsDir };

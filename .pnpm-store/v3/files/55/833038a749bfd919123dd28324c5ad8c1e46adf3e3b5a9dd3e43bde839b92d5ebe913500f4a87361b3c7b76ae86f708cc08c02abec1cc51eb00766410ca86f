@@ -1,0 +1,87 @@
+{
+  "name": "vitest-environment-nuxt",
+  "version": "0.11.5",
+  "description": "An vitest environment with support for testing code that needs a Nuxt runtime environment.",
+  "repository": "danielroe/nuxt-vitest",
+  "keywords": [
+    "nuxt",
+    "vitest",
+    "vitest-environment",
+    "testing",
+    "unit-testing"
+  ],
+  "author": {
+    "name": "Daniel Roe <daniel@roe.dev>",
+    "url": "https://github.com/danielroe"
+  },
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "require": "./dist/utils.cjs",
+      "import": "./dist/utils.mjs"
+    },
+    "./module": {
+      "types": "./dist/module.d.ts",
+      "require": "./dist/module.cjs",
+      "import": "./dist/module.mjs"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "*.d.ts"
+  ],
+  "dependencies": {
+    "@nuxt/kit": "^3.7.4",
+    "@vue/test-utils": "^2.4.1",
+    "defu": "^6.1.2",
+    "estree-walker": "^3.0.3",
+    "fake-indexeddb": "^5.0.0",
+    "h3": "^1.8.1",
+    "local-pkg": "^0.5.0",
+    "magic-string": "^0.30.3",
+    "ofetch": "^1.3.3",
+    "radix3": "^1.1.0",
+    "ufo": "^1.3.0",
+    "unenv": "^1.7.4"
+  },
+  "devDependencies": {
+    "@testing-library/vue": "8.0.1",
+    "@types/jsdom": "21.1.5",
+    "happy-dom": "12.1.6",
+    "jsdom": "22.1.0",
+    "vue": "3.3.4"
+  },
+  "peerDependencies": {
+    "@testing-library/vue": "8.0.1",
+    "happy-dom": "^9.10.9 || ^10.0.0 || ^11.0.0 || ^12.0.0",
+    "jsdom": "^22.0.0",
+    "vitest": "^0.24.5 || ^0.26.0 || ^0.27.0 || ^0.28.0 || ^0.29.0 || ^0.30.0 || ^0.33.0",
+    "vue": "^3.2.45",
+    "vue-router": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@testing-library/vue": {
+      "optional": true
+    },
+    "happy-dom": {
+      "optional": true
+    },
+    "jsdom": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "unbuild",
+    "stub": "unbuild --stub",
+    "release": "changelogen --release --no-commit --no-tag"
+  }
+}

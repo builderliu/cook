@@ -1,0 +1,23 @@
+{
+	"prefix": "fe",
+	"name": "Feather Icon",
+	"total": 255,
+	"version": "1.0.2",
+	"author": {
+		"name": "Megumi Hano",
+		"url": "https://github.com/feathericon/feathericon"
+	},
+	"license": {
+		"title": "MIT",
+		"spdx": "MIT",
+		"url": "https://github.com/feathericon/feathericon/blob/master/LICENSE"
+	},
+	"samples": [
+		"add-cart",
+		"comments",
+		"link-external"
+	],
+	"height": 24,
+	"category": "General",
+	"palette": false
+}

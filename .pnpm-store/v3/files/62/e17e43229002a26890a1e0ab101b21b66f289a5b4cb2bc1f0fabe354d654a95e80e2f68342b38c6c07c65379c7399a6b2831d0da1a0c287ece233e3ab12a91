@@ -1,0 +1,12 @@
+export { defineVitestConfig } from './config.mjs';
+export { default } from './module.mjs';
+import 'vite';
+import '@vitejs/plugin-vue';
+import '@vitejs/plugin-vue-jsx';
+import 'defu';
+import 'node:url';
+import '@nuxt/kit';
+import 'get-port-please';
+import 'vue';
+import 'perfect-debounce';
+import 'std-env';

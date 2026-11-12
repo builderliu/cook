@@ -1,0 +1,5 @@
+import { Environment } from 'vitest';
+
+declare const _default: Environment;
+
+export { _default as default };

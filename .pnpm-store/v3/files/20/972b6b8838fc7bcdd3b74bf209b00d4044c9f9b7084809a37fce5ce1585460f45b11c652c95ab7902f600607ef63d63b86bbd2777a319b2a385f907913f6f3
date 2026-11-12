@@ -1,0 +1,8 @@
+'use strict';
+
+const index = require('./shared/eslint-plugin-command.39b4ac5a.cjs');
+require('./shared/eslint-plugin-command.b6e125a7.cjs');
+
+
+
+module.exports = index.defaultPlugin;

@@ -1,0 +1,16 @@
+import { defineNuxtModule, createResolver, addPlugin } from '@nuxt/kit';
+
+const module = defineNuxtModule({
+  meta: {
+    name: "nuxt-fix-ofetch",
+    configKey: "fixOfetch"
+  },
+  // Default configuration options of the Nuxt module
+  defaults: {},
+  setup() {
+    const resolver = createResolver(import.meta.url);
+    addPlugin(resolver.resolve("./runtime/00.fetch.client"));
+  }
+});
+
+export { module as default };

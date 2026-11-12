@@ -1,0 +1,33 @@
+{
+  "name": "@yunlefun/vue",
+  "type": "module",
+  "version": "0.1.1",
+  "description": "Components for YunLeFun",
+  "exports": {
+    "./components/*": "./components/*",
+    "./nuxt": "./nuxt.mjs",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./*": "./*"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "components",
+    "dist",
+    "nuxt.mjs"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "prepublishOnly": "npm run build",
+    "release": "bumpp --no-commit --no-tag --no-push && npm publish",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "devDependencies": {
+    "nuxt": "^3.9.3"
+  }
+}

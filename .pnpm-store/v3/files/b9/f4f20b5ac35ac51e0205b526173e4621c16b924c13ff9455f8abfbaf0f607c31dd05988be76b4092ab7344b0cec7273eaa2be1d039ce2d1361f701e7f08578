@@ -1,0 +1,10 @@
+export interface ResponseMap {
+    blob: Blob;
+    text: string;
+    arrayBuffer: ArrayBuffer;
+    stream: ReadableStream<Uint8Array>;
+}
+export type ResponseType = keyof ResponseMap | "json";
+export declare function detectResponseType(_contentType?: string): ResponseType;
+declare const _default: () => void;
+export default _default;

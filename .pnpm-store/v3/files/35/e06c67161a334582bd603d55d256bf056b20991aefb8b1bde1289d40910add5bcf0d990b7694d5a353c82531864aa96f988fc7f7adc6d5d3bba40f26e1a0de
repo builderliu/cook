@@ -1,0 +1,5 @@
+export { defineVitestConfig } from './config.cjs';
+export { default } from './module.cjs';
+import 'vite';
+import '@nuxt/schema';
+import 'vitest';

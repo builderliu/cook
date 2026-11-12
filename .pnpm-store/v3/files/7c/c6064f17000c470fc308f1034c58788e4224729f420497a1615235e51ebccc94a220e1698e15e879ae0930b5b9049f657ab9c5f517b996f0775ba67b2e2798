@@ -1,0 +1,5 @@
+{
+  "name": "nuxt-fix-ofetch",
+  "configKey": "fixOfetch",
+  "version": "0.0.13"
+}

@@ -1,0 +1,10 @@
+'use strict';
+
+const node_path = require('node:path');
+const node_url = require('node:url');
+
+const _dirname = typeof __dirname !== "undefined" ? __dirname : node_path.dirname(node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (document.currentScript && document.currentScript.src || new URL('index.cjs', document.baseURI).href))));
+const componentsDir = node_path.resolve(_dirname, "../components");
+
+exports._dirname = _dirname;
+exports.componentsDir = componentsDir;

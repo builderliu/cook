@@ -1,0 +1,22 @@
+'use strict';
+
+const index = require('./shared/eslint-plugin-command.39b4ac5a.cjs');
+require('./shared/eslint-plugin-command.b6e125a7.cjs');
+
+function config(options = {}) {
+  const plugin = options.commands ? index.createPluginWithCommands(options) : index.defaultPlugin;
+  const {
+    name = "command"
+  } = options;
+  return {
+    name,
+    plugins: {
+      [name]: plugin
+    },
+    rules: {
+      [`${name}/command`]: "error"
+    }
+  };
+}
+
+module.exports = config;

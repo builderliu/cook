@@ -1,0 +1,156 @@
+'use strict';
+
+const config = require('./config.cjs');
+const node_url = require('node:url');
+const kit = require('@nuxt/kit');
+const vite = require('vite');
+const getPortPlease = require('get-port-please');
+const vue = require('vue');
+const perfectDebounce = require('perfect-debounce');
+const stdEnv = require('std-env');
+require('@vitejs/plugin-vue');
+require('@vitejs/plugin-vue-jsx');
+require('defu');
+
+const vitePluginBlocklist = ["vite-plugin-vue-inspector", "vite-plugin-inspect"];
+const module$1 = kit.defineNuxtModule({
+  meta: {
+    name: "nuxt-vitest",
+    configKey: "vitest"
+  },
+  defaults: {
+    startOnBoot: false,
+    logToConsole: false
+  },
+  async setup(options, nuxt) {
+    await kit.installModule("vitest-environment-nuxt/module");
+    if (!nuxt.options.dev)
+      return;
+    if (nuxt.options.test && nuxt.options.app.rootId === "__nuxt") {
+      nuxt.options.app.rootId = "nuxt-test";
+    }
+    if (process.env.TEST || process.env.VITE_TEST)
+      return;
+    const rawViteConfigPromise = new Promise((resolve) => {
+      nuxt.hook("app:resolve", () => {
+        nuxt.hook("vite:extendConfig", (config, { isClient }) => {
+          if (isClient)
+            resolve(config);
+        });
+      });
+    });
+    const PORT = await getPortPlease.getPort({ port: 15555 });
+    const URL = `http://localhost:${PORT}/__vitest__/`;
+    let loaded = false;
+    let promise;
+    let ctx = void 0;
+    let testFiles = null;
+    const updateTabs = perfectDebounce.debounce(() => {
+      nuxt.callHook("devtools:customTabs:refresh");
+    }, 100);
+    async function start() {
+      const rawViteConfig = vite.mergeConfig({}, await rawViteConfigPromise);
+      const viteConfig = vite.mergeConfig(
+        await config.getVitestConfigFromNuxt({ nuxt, viteConfig: rawViteConfig }),
+        {
+          server: {
+            middlewareMode: false
+          }
+        }
+      );
+      viteConfig.plugins = (viteConfig.plugins || []).filter((p) => {
+        return !vitePluginBlocklist.includes(p?.name);
+      });
+      process.env.__NUXT_VITEST_RESOLVED__ = "true";
+      const { startVitest } = await import(node_url.pathToFileURL(await kit.resolvePath("vitest/node")).href);
+      const customReporter = {
+        onInit(_ctx) {
+          ctx = _ctx;
+        },
+        onTaskUpdate() {
+          testFiles = ctx.state.getFiles();
+          updateTabs();
+        },
+        onFinished() {
+          testFiles = ctx.state.getFiles();
+          updateTabs();
+        }
+      };
+      const watchMode = !process.env.NUXT_VITEST_DEV_TEST && !stdEnv.isCI;
+      const vitestConfig = watchMode ? {
+        passWithNoTests: true,
+        ...options.vitestConfig,
+        reporters: options.logToConsole ? [
+          ...toArray(options.vitestConfig?.reporters ?? ["default"]),
+          customReporter
+        ] : [customReporter],
+        // do not report to console
+        watch: true,
+        ui: true,
+        open: false,
+        api: {
+          port: PORT
+        }
+      } : {
+        ...options.vitestConfig,
+        watch: false
+      };
+      viteConfig.configFile = false;
+      const promise2 = startVitest("test", [], vitestConfig, viteConfig);
+      promise2.catch(() => process.exit(1));
+      if (watchMode) {
+        kit.logger.info(`Vitest UI starting on ${URL}`);
+        await new Promise((resolve) => setTimeout(resolve, 1e3));
+      } else {
+        promise2.then((v) => v?.close()).then(() => process.exit());
+        promise2.catch(() => process.exit(1));
+      }
+      loaded = true;
+    }
+    nuxt.hook("devtools:customTabs", (tabs) => {
+      const failedCount = testFiles?.filter((f) => f.result?.state === "fail").length ?? 0;
+      const passedCount = testFiles?.filter((f) => f.result?.state === "pass").length ?? 0;
+      const totalCount = testFiles?.length ?? 0;
+      tabs.push({
+        title: "Vitest",
+        name: "vitest",
+        icon: "logos-vitest",
+        view: loaded ? {
+          type: "iframe",
+          src: URL
+        } : {
+          type: "launch",
+          description: "Start tests along with Nuxt",
+          actions: [
+            {
+              label: promise ? "Starting..." : "Start Vitest",
+              pending: !!promise,
+              handle: () => {
+                promise = promise || start();
+                return promise;
+              }
+            }
+          ]
+        },
+        extraTabVNode: totalCount ? vue.h("div", { style: { color: failedCount ? "orange" : "green" } }, [
+          vue.h("span", {}, passedCount),
+          vue.h("span", { style: { opacity: "0.5", fontSize: "0.9em" } }, "/"),
+          vue.h(
+            "span",
+            { style: { opacity: "0.8", fontSize: "0.9em" } },
+            totalCount
+          )
+        ]) : void 0
+      });
+    });
+    if (options.startOnBoot) {
+      promise = promise || start();
+      promise.then(updateTabs);
+    }
+  }
+});
+function toArray(value) {
+  return Array.isArray(value) ? value : [value];
+}
+
+module.exports = module$1;

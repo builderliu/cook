@@ -1,0 +1,409 @@
+'use strict';
+
+const toFunction = {
+  name: "to-function",
+  match: /^[\/:@]\s*(to-(?:fn|function)|2f|tf)$/,
+  action(ctx) {
+    const arrowFn = ctx.findNodeBelow("ArrowFunctionExpression");
+    if (!arrowFn)
+      return ctx.reportError("Unable to find arrow function to convert");
+    let start = arrowFn;
+    let id;
+    const body = arrowFn.body;
+    if (arrowFn.parent.type === "VariableDeclarator" && arrowFn.parent.id.type === "Identifier") {
+      id = arrowFn.parent.id;
+      if (arrowFn.parent.parent.type === "VariableDeclaration" && arrowFn.parent.parent.kind === "const" && arrowFn.parent.parent.declarations.length === 1)
+        start = arrowFn.parent.parent;
+    } else if (arrowFn.parent.type === "Property" && arrowFn.parent.key.type === "Identifier") {
+      id = arrowFn.parent.key;
+      start = arrowFn.parent.key;
+    }
+    ctx.removeComment();
+    ctx.report({
+      node: arrowFn,
+      loc: {
+        start: start.loc.start,
+        end: body.loc.start
+      },
+      message: "Convert to function",
+      fix(fixer) {
+        const textName = ctx.getTextOf(id);
+        const textArgs = arrowFn.params.length ? ctx.getTextOf([arrowFn.params[0].range[0], arrowFn.params[arrowFn.params.length - 1].range[1]]) : "";
+        const textBody = body.type === "BlockStatement" ? ctx.getTextOf(body) : `{
+  return ${ctx.getTextOf(body)}
+}`;
+        const textGeneric = ctx.getTextOf(arrowFn.typeParameters);
+        const textTypeReturn = ctx.getTextOf(arrowFn.returnType);
+        const textAsync = arrowFn.async ? "async" : "";
+        const fnBody = [`${textGeneric}(${textArgs})${textTypeReturn}`, textBody].filter(Boolean).join(" ");
+        let final = [textAsync, `function`, textName, fnBody].filter(Boolean).join(" ");
+        if (arrowFn.parent.type === "Property")
+          final = [textAsync, textName, fnBody].filter(Boolean).join(" ");
+        return fixer.replaceTextRange([start.range[0], arrowFn.range[1]], final);
+      }
+    });
+  }
+};
+
+const toArrow = {
+  name: "to-arrow",
+  match: /^[\/:@]\s*(to-arrow|2a|ta)$/,
+  action(ctx) {
+    const fn = ctx.findNodeBelow("FunctionDeclaration", "FunctionExpression");
+    if (!fn)
+      return ctx.reportError("Unable to find function declaration to convert");
+    const id = fn.id;
+    const body = fn.body;
+    let rangeStart = fn.range[0];
+    const rangeEnd = fn.range[1];
+    ctx.removeComment();
+    ctx.report({
+      node: fn,
+      loc: {
+        start: fn.loc.start,
+        end: body.loc.start
+      },
+      message: "Convert to arrow function",
+      fix(fixer) {
+        let textName = ctx.getTextOf(id);
+        const textArgs = fn.params.length ? ctx.getTextOf([fn.params[0].range[0], fn.params[fn.params.length - 1].range[1]]) : "";
+        const textBody = body.type === "BlockStatement" ? ctx.getTextOf(body) : `{
+  return ${ctx.getTextOf(body)}
+}`;
+        const textGeneric = ctx.getTextOf(fn.typeParameters);
+        const textTypeReturn = ctx.getTextOf(fn.returnType);
+        const textAsync = fn.async ? "async" : "";
+        let final = [textAsync, `${textGeneric}(${textArgs})${textTypeReturn} =>`, textBody].filter(Boolean).join(" ");
+        if (fn.type === "FunctionDeclaration" && textName) {
+          final = `const ${textName} = ${final}`;
+        } else if (fn.parent.type === "Property") {
+          rangeStart = fn.parent.range[0];
+          textName = ctx.getTextOf(fn.parent.key);
+          final = `${textName}: ${final}`;
+        } else if (fn.parent.type === "MethodDefinition") {
+          rangeStart = fn.parent.range[0];
+          textName = ctx.getTextOf(fn.parent.key);
+          final = `${textName} = ${final}`;
+        }
+        return fixer.replaceTextRange([rangeStart, rangeEnd], final);
+      }
+    });
+  }
+};
+
+const keepSorted = {
+  name: "keep-sorted",
+  match: /^[\/@:]\s*(keep-sorted|sorted)$/,
+  action(ctx) {
+    const node = ctx.findNodeBelow(
+      "ObjectExpression",
+      "ArrayExpression",
+      "TSInterfaceBody",
+      "TSTypeLiteral"
+    ) || ctx.findNodeBelow(
+      "ExportNamedDeclaration"
+    );
+    if (!node)
+      return ctx.reportError("Unable to find object/array/interface to sort");
+    const firstToken = ctx.context.sourceCode.getFirstToken(node);
+    const lastToken = ctx.context.sourceCode.getLastToken(node);
+    if (!firstToken || !lastToken)
+      return ctx.reportError("Unable to find object/array/interface to sort");
+    function sort(list, getName) {
+      if (list.length < 2)
+        return;
+      const reordered = list.slice();
+      const ranges = /* @__PURE__ */ new Map();
+      const names = /* @__PURE__ */ new Map();
+      const rangeStart = Math.max(
+        firstToken.range[1],
+        ctx.context.sourceCode.getIndexFromLoc({
+          line: list[0].loc.start.line,
+          column: 0
+        })
+      );
+      let rangeEnd = rangeStart;
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        const name = getName(item);
+        names.set(item, name);
+        let lastRange = item.range[1];
+        const endStartToken = ctx.context.sourceCode.getTokenByRangeStart(lastRange);
+        if (endStartToken?.type === "Punctuator" && endStartToken.value === ",")
+          lastRange = endStartToken.range[1];
+        if (ctx.context.sourceCode.getText()[lastRange] === "\n")
+          lastRange++;
+        ranges.set(item, [rangeEnd, lastRange]);
+        rangeEnd = lastRange;
+      }
+      const segments = [];
+      let segmentStart = -1;
+      for (let i = 0; i < list.length; i++) {
+        if (names.get(list[i]) == null) {
+          if (segmentStart > -1)
+            segments.push([segmentStart, i]);
+          segmentStart = -1;
+        } else {
+          if (segmentStart === -1)
+            segmentStart = i;
+        }
+      }
+      if (segmentStart > -1 && segmentStart !== list.length - 1)
+        segments.push([segmentStart, list.length]);
+      for (const [start, end] of segments) {
+        reordered.splice(
+          start,
+          end - start,
+          ...reordered.slice(start, end).sort((a, b) => {
+            const nameA = names.get(a);
+            const nameB = names.get(b);
+            return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+          })
+        );
+      }
+      const changed = reordered.some((prop, i) => prop !== list[i]);
+      if (!changed)
+        return;
+      const newContent = reordered.map((i) => {
+        const range = ranges.get(i);
+        return ctx.context.sourceCode.text.slice(range[0], range[1]);
+      }).join("");
+      ctx.report({
+        node,
+        message: "Keep sorted",
+        fix(fixer) {
+          return fixer.replaceTextRange([rangeStart, rangeEnd], newContent);
+        }
+      });
+    }
+    if (node.type === "ObjectExpression") {
+      sort(
+        node.properties,
+        (prop) => {
+          if (prop.type === "Property" && prop.key.type === "Identifier")
+            return prop.key.name;
+          return null;
+        }
+      );
+    } else if (node.type === "ArrayExpression") {
+      sort(
+        node.elements.filter(Boolean),
+        (element) => {
+          if (element.type === "Identifier")
+            return element.name;
+          if (element.type === "Literal")
+            return String(element.value);
+          return null;
+        }
+      );
+    } else if (node.type === "TSInterfaceBody") {
+      sort(
+        node.body,
+        (prop) => {
+          if (prop.type === "TSPropertySignature" && prop.key.type === "Identifier")
+            return prop.key.name;
+          return null;
+        }
+      );
+    } else if (node.type === "TSTypeLiteral") {
+      sort(
+        node.members,
+        (prop) => {
+          if (prop.type === "TSPropertySignature" && prop.key.type === "Identifier")
+            return prop.key.name;
+          return null;
+        }
+      );
+    } else if (node.type === "ExportNamedDeclaration") {
+      sort(
+        node.specifiers,
+        (prop) => {
+          if (prop.type === "ExportSpecifier" && prop.exported.type === "Identifier")
+            return prop.exported.name;
+          return null;
+        }
+      );
+    }
+  }
+};
+
+const FOR_TRAVERSE_IGNORE = [
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+  "WhileStatement",
+  "DoWhileStatement",
+  "ForInStatement",
+  "ForOfStatement",
+  "ForStatement",
+  "ArrowFunctionExpression"
+];
+const toForEach = {
+  name: "to-for-each",
+  match: /^[\/:@]\s*(?:to-|2)?(?:for-?each)$/i,
+  action(ctx) {
+    const node = ctx.findNodeBelow("ForInStatement", "ForOfStatement");
+    if (!node)
+      return ctx.reportError("Unable to find for statement to convert");
+    const continueNodes = [];
+    const result = ctx.traverse(node.body, (path, { STOP, SKIP }) => {
+      if (FOR_TRAVERSE_IGNORE.includes(path.node.type))
+        return SKIP;
+      if (path.node.type === "ContinueStatement") {
+        continueNodes.push(path.node);
+      } else if (path.node.type === "BreakStatement") {
+        ctx.reportError(
+          "Unable to convert for statement with break statement",
+          {
+            node: path.node,
+            message: "Break statement has no equivalent in forEach"
+          }
+        );
+        return STOP;
+      } else if (path.node.type === "ReturnStatement") {
+        ctx.reportError(
+          "Unable to convert for statement with return statement",
+          {
+            node: path.node,
+            message: "Return statement has no equivalent in forEach"
+          }
+        );
+        return STOP;
+      }
+    });
+    if (!result)
+      return;
+    let textBody = ctx.getTextOf(node.body);
+    continueNodes.sort((a, b) => b.loc.start.line - a.loc.start.line).forEach((c) => {
+      textBody = textBody.slice(0, c.range[0] - node.body.range[0]) + "return" + textBody.slice(c.range[1] - node.body.range[0]);
+    });
+    if (!textBody.trim().startsWith("{"))
+      textBody = `{
+${textBody}
+}`;
+    const localId = node.left.type === "VariableDeclaration" ? node.left.declarations[0].id : node.left;
+    const textLocal = ctx.getTextOf(localId);
+    let textIterator = ctx.getTextOf(node.right);
+    if (!["Identifier", "MemberExpression", "CallExpression"].includes(node.right.type))
+      textIterator = `(${textIterator})`;
+    let str = node.type === "ForOfStatement" ? `${textIterator}.forEach((${textLocal}) => ${textBody})` : `Object.keys(${textIterator}).forEach((${textLocal}) => ${textBody})`;
+    if (str[0] === "(")
+      str = `;${str}`;
+    ctx.removeComment();
+    ctx.report({
+      node,
+      message: "Convert to forEach",
+      fix(fixer) {
+        return fixer.replaceText(node, str);
+      }
+    });
+  }
+};
+
+const toForOf = {
+  name: "to-for-of",
+  match: /^[\/:@]\s*(?:to-|2)?(?:for-?of)$/i,
+  action(ctx) {
+    const target = ctx.findNodeBelow((node) => {
+      if (node.type === "CallExpression" && node.callee.type === "MemberExpression" && node.callee.property.type === "Identifier" && node.callee.property.name === "forEach")
+        return true;
+      return false;
+    });
+    if (!target)
+      return ctx.reportError("Unable to find .forEach() to convert");
+    const member = target.callee;
+    const iterator = member.object;
+    const fn = target.arguments[0];
+    if (fn.type !== "ArrowFunctionExpression" && fn.type !== "FunctionExpression")
+      return ctx.reportError("Unable to find .forEach() to convert");
+    if (fn.params.length !== 1) {
+      return ctx.reportError(
+        "Unable to convert forEach",
+        {
+          node: fn.params[0],
+          message: "Index argument in forEach is not yet supported for conversion"
+        }
+      );
+    }
+    const returnNodes = [];
+    ctx.traverse(fn.body, (path, { SKIP }) => {
+      if (FOR_TRAVERSE_IGNORE.includes(path.node.type))
+        return SKIP;
+      if (path.node.type === "ReturnStatement")
+        returnNodes.push(path.node);
+    });
+    let textBody = ctx.getTextOf(fn.body);
+    returnNodes.sort((a, b) => b.loc.start.line - a.loc.start.line).forEach((c) => {
+      textBody = textBody.slice(0, c.range[0] - fn.body.range[0]) + "continue" + textBody.slice(c.range[1] - fn.body.range[0]);
+    });
+    const local = fn.params[0];
+    const str = `for (const ${ctx.getTextOf(local)} of ${ctx.getTextOf(iterator)}) ${textBody}`;
+    ctx.removeComment();
+    ctx.report({
+      node: target,
+      message: "Convert to for-of loop",
+      fix(fixer) {
+        return fixer.replaceText(target, str);
+      }
+    });
+  }
+};
+
+const toDynamicImport = {
+  name: "to-dynamic-import",
+  match: /^[\/:@]\s*(?:to-|2)?(?:dynamic|d)(?:-?import)?$/i,
+  action(ctx) {
+    const node = ctx.findNodeBelow("ImportDeclaration");
+    if (!node)
+      return ctx.reportError("Unable to find import statement to convert");
+    let namespace;
+    if (node.importKind === "type")
+      return ctx.reportError("Unable to convert type import to dynamic import");
+    const typeSpecifiers = [];
+    const destructure = node.specifiers.map((specifier) => {
+      if (specifier.type === "ImportSpecifier") {
+        if (specifier.importKind === "type") {
+          typeSpecifiers.push(specifier);
+          return null;
+        }
+        if (specifier.local.name === specifier.imported.name)
+          return ctx.getTextOf(specifier.imported);
+        else
+          return `${ctx.getTextOf(specifier.imported)}: ${ctx.getTextOf(specifier.local)}`;
+      } else if (specifier.type === "ImportDefaultSpecifier") {
+        return `default: ${ctx.getTextOf(specifier.local)}`;
+      } else if (specifier.type === "ImportNamespaceSpecifier") {
+        namespace = ctx.getTextOf(specifier.local);
+        return null;
+      }
+      return null;
+    }).filter(Boolean).join(", ");
+    let str = namespace ? `const ${namespace} = await import(${ctx.getTextOf(node.source)})` : `const { ${destructure} } = await import(${ctx.getTextOf(node.source)})`;
+    if (typeSpecifiers.length)
+      str = `import { ${typeSpecifiers.map((s) => ctx.getTextOf(s)).join(", ")} } from ${ctx.getTextOf(node.source)}
+${str}`;
+    ctx.removeComment();
+    ctx.report({
+      node,
+      message: "Convert to dynamic import",
+      fix: (fixer) => fixer.replaceText(node, str)
+    });
+  }
+};
+
+const builtinCommands = [
+  keepSorted,
+  toArrow,
+  toDynamicImport,
+  toForEach,
+  toForOf,
+  toFunction
+];
+
+exports.builtinCommands = builtinCommands;
+exports.keepSorted = keepSorted;
+exports.toArrow = toArrow;
+exports.toDynamicImport = toDynamicImport;
+exports.toForEach = toForEach;
+exports.toForOf = toForOf;
+exports.toFunction = toFunction;

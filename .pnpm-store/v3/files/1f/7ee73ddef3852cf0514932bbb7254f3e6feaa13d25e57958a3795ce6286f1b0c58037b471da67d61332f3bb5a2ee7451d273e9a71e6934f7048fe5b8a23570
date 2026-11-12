@@ -1,0 +1,19 @@
+import { Command } from './types.js';
+export { defineCommand } from './types.js';
+import '@typescript-eslint/utils';
+
+declare const toFunction: Command;
+
+declare const toArrow: Command;
+
+declare const keepSorted: Command;
+
+declare const toForEach: Command;
+
+declare const toForOf: Command;
+
+declare const toDynamicImport: Command;
+
+declare const builtinCommands: Command[];
+
+export { Command, builtinCommands, keepSorted, toArrow, toDynamicImport, toForEach, toForOf, toFunction };

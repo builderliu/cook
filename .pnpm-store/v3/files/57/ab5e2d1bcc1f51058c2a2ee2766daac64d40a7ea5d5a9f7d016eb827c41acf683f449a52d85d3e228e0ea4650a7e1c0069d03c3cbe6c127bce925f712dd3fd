@@ -1,0 +1,21 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const config = require('./config.cjs');
+const module$1 = require('./module.cjs');
+require('vite');
+require('@vitejs/plugin-vue');
+require('@vitejs/plugin-vue-jsx');
+require('defu');
+require('node:url');
+require('@nuxt/kit');
+require('get-port-please');
+require('vue');
+require('perfect-debounce');
+require('std-env');
+
+
+
+exports.defineVitestConfig = config.defineVitestConfig;
+exports.default = module$1;

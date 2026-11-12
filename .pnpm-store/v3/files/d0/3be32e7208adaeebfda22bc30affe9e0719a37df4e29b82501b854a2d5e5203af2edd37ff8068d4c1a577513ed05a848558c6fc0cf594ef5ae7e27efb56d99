@@ -1,0 +1,113 @@
+import { TSESTree, TSESLint } from '@typescript-eslint/utils';
+export { TSESLint as Linter, TSESTree as Tree } from '@typescript-eslint/utils';
+
+interface TraversePath {
+    node: TSESTree.Node;
+    parent: TSESTree.Node | null;
+    parentKey: string | null;
+    parentPath: TraversePath | null;
+}
+type TraverseVisitor = (path: TraversePath, symbols: {
+    SKIP: symbol;
+    STOP: symbol;
+}) => symbol | void;
+
+declare class CommandContext {
+    /**
+     * The ESLint RuleContext
+     */
+    readonly context: TSESLint.RuleContext<MessageIds, RuleOptions>;
+    /**
+     * The comment node that triggered the command
+     */
+    readonly comment: TSESTree.Comment;
+    /**
+     * Command that triggered the context
+     */
+    readonly command: Command;
+    /**
+     * Alias for `this.context.sourceCode`
+     */
+    readonly source: TSESLint.SourceCode;
+    constructor(context: TSESLint.RuleContext<MessageIds, RuleOptions>, comment: TSESTree.Comment, command: Command);
+    /**
+     * A shorthand of `this.context.sourceCode.getText(node)`
+     *
+     * When `node` is `null` or `undefined`, it returns an empty string
+     */
+    getTextOf(node?: TSESTree.Node | TSESTree.Token | TSESTree.Range | null): string;
+    /**
+     * Report an ESLint error on the triggering comment, without fix
+     */
+    reportError(message: string, ...causes: CommandReportErrorCauseDescriptor[]): void;
+    /**
+     * Report an ESLint error.
+     * Different from normal `context.report` as that it requires `message` instead of `messageId`.
+     */
+    report(descriptor: CommandReportDescriptor): void;
+    /**
+     * Utility to traverse the AST starting from a node
+     */
+    traverse(node: TSESTree.Node, cb: TraverseVisitor): boolean;
+    /**
+     * Report an ESLint error that removes the triggering comment
+     */
+    removeComment(): void;
+    /**
+     * Find specific node types (first match) in the line below the comment
+     */
+    findNodeBelow(filter: (node: TSESTree.Node) => boolean): TSESTree.Node | undefined;
+    findNodeBelow<T extends TSESTree.Node['type']>(...types: (T | `${T}`)[]): Extract<TSESTree.Node, {
+        type: T;
+    }> | undefined;
+}
+
+type NodeType = `${TSESTree.Node['type']}`;
+type RuleOptions = [];
+type MessageIds = 'command-error' | 'command-error-cause' | 'command-fix' | 'command-removal';
+interface Command {
+    match: RegExp;
+    name: string;
+    action: (ctx: CommandContext) => void;
+}
+interface ESLintPluginCommandOptions {
+    /**
+     * Name of the plugin
+     * @default 'command'
+     */
+    name?: string;
+    /**
+     * Custom commands to use
+     * If not provided, all the built-in commands will be used
+     */
+    commands?: Command[];
+}
+type CommandReportDescriptor = Partial<TSESLint.ReportDescriptor<MessageIds>> & {
+    message: string;
+};
+type CommandReportErrorCauseDescriptor = {
+    /**
+     * An override of the location of the report
+     */
+    loc: Readonly<TSESTree.Position> | Readonly<TSESTree.SourceLocation>;
+    /**
+     * Reason of the cause
+     */
+    message: string;
+} | {
+    /**
+     * The Node or AST Token which the report is being attached to
+     */
+    node: TSESTree.Node | TSESTree.Token;
+    /**
+     * An override of the location of the report
+     */
+    loc?: Readonly<TSESTree.Position> | Readonly<TSESTree.SourceLocation>;
+    /**
+     * Reason of the cause
+     */
+    message: string;
+};
+declare function defineCommand(command: Command): Command;
+
+export { type Command, CommandContext, type CommandReportDescriptor, type CommandReportErrorCauseDescriptor, type ESLintPluginCommandOptions, type MessageIds, type NodeType, type RuleOptions, defineCommand };

@@ -1,0 +1,7 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const _dirname = typeof __dirname !== "undefined" ? __dirname : dirname(fileURLToPath(import.meta.url));
+const componentsDir = resolve(_dirname, "../components");
+
+export { _dirname, componentsDir };

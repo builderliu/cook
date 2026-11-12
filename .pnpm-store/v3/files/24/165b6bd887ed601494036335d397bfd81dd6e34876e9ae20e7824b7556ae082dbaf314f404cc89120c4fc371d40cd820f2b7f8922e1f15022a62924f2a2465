@@ -1,0 +1,182 @@
+'use strict';
+
+const ofetch = require('ofetch');
+const fakeIndexeddb = require('fake-indexeddb');
+const ufo = require('ufo');
+const h3 = require('h3');
+const radix3 = require('radix3');
+const environments = require('vitest/environments');
+const index$1 = require('unenv/runtime/fetch/index');
+const localPkg = require('local-pkg');
+
+const happyDom = (async function(_, { happyDom = {} }) {
+  const { Window, GlobalWindow } = await localPkg.importModule(
+    "happy-dom"
+  );
+  const window = new (GlobalWindow || Window)(happyDom);
+  return {
+    window,
+    teardown() {
+      window.happyDOM.cancelAsync();
+    }
+  };
+});
+
+const jsdom = (async function(global, { jsdom = {} }) {
+  const { CookieJar, JSDOM, ResourceLoader, VirtualConsole } = await localPkg.importModule("jsdom");
+  const {
+    html = "<!DOCTYPE html>",
+    userAgent,
+    url = "http://localhost:3000",
+    contentType = "text/html",
+    pretendToBeVisual = true,
+    includeNodeLocations = false,
+    runScripts = "dangerously",
+    resources,
+    console = false,
+    cookieJar = false,
+    ...restOptions
+  } = jsdom;
+  const window = new JSDOM(html, {
+    pretendToBeVisual,
+    resources: resources ?? (userAgent ? new ResourceLoader({ userAgent }) : void 0),
+    runScripts,
+    url,
+    virtualConsole: console && global.console ? new VirtualConsole().sendTo(global.console) : void 0,
+    cookieJar: cookieJar ? new CookieJar() : void 0,
+    includeNodeLocations,
+    contentType,
+    userAgent,
+    ...restOptions
+  }).window;
+  window.scrollTo = () => {
+  };
+  return {
+    window,
+    teardown() {
+    }
+  };
+});
+
+const index = {
+  name: "nuxt",
+  async setup(global, environmentOptions) {
+    const url = ufo.joinURL(
+      "http://localhost:3000",
+      environmentOptions?.nuxtRuntimeConfig.app?.baseURL || "/"
+    );
+    const { window: win, teardown } = await {
+      "happy-dom": happyDom,
+      jsdom
+    }[environmentOptions.nuxt.domEnvironment || "happy-dom"](global, {
+      ...environmentOptions,
+      happyDom: {
+        url,
+        ...environmentOptions?.happyDom
+      },
+      jsdom: {
+        url,
+        ...environmentOptions?.jsdom
+      }
+    });
+    win.__NUXT__ = {
+      serverRendered: false,
+      config: {
+        public: {},
+        app: { baseURL: "/" },
+        ...environmentOptions?.nuxtRuntimeConfig
+      },
+      data: {},
+      state: {}
+    };
+    const app = win.document.createElement("div");
+    app.id = environmentOptions.nuxt.rootId;
+    win.document.body.appendChild(app);
+    if (environmentOptions?.nuxt?.mock?.intersectionObserver) {
+      win.IntersectionObserver = win.IntersectionObserver || class IntersectionObserver {
+        observe() {
+        }
+        unobserve() {
+        }
+        disconnect() {
+        }
+      };
+    }
+    if (environmentOptions?.nuxt?.mock?.indexedDb) {
+      win.indexedDB = fakeIndexeddb.indexedDB;
+    }
+    const h3App = h3.createApp();
+    if (!win.fetch) {
+      await import('node-fetch-native/polyfill');
+      win.URLSearchParams = globalThis.URLSearchParams;
+    }
+    const localCall = index$1.createCall(h3.toNodeListener(h3App));
+    const localFetch = index$1.createFetch(localCall, win.fetch);
+    const registry = /* @__PURE__ */ new Set();
+    win.fetch = (init, options) => {
+      if (typeof init === "string") {
+        const base = init.split("?")[0];
+        if (registry.has(base) || registry.has(init)) {
+          init = "/_" + init;
+        }
+      }
+      return localFetch(init, options);
+    };
+    win.$fetch = ofetch.createFetch({ fetch: win.fetch, Headers: win.Headers });
+    win.__registry = registry;
+    win.__app = h3App;
+    const { keys, originals } = environments.populateGlobal(global, win, {
+      bindFunctions: true
+    });
+    const timestamp = Date.now();
+    const routeRulesMatcher = radix3.toRouteMatcher(
+      radix3.createRouter({ routes: environmentOptions.nuxtRouteRules || {} })
+    );
+    const matcher = radix3.exportMatcher(routeRulesMatcher);
+    const manifestOutputPath = ufo.joinURL(
+      "/",
+      environmentOptions?.nuxtRuntimeConfig.app?.buildAssetsDir || "_nuxt",
+      "builds"
+    );
+    const manifestBaseRoutePath = ufo.joinURL("/_", manifestOutputPath);
+    h3App.use(
+      `${manifestBaseRoutePath}/latest.json`,
+      h3.defineEventHandler(() => ({
+        id: "test",
+        timestamp
+      }))
+    );
+    h3App.use(
+      `${manifestBaseRoutePath}/meta/test.json`,
+      h3.defineEventHandler(() => ({
+        id: "test",
+        timestamp,
+        matcher,
+        prerendered: []
+      }))
+    );
+    h3App.use(
+      `${manifestBaseRoutePath}/meta/dev.json`,
+      h3.defineEventHandler(() => ({
+        id: "test",
+        timestamp,
+        matcher,
+        prerendered: []
+      }))
+    );
+    registry.add(`${manifestOutputPath}/latest.json`);
+    registry.add(`${manifestOutputPath}/meta/test.json`);
+    registry.add(`${manifestOutputPath}/meta/dev.json`);
+    await import('#app/entry').then((r) => r.default());
+    return {
+      // called after all tests with this env have been run
+      teardown() {
+        teardown();
+        keys.forEach((key) => delete global[key]);
+        originals.forEach((v, k) => global[k] = v);
+      }
+    };
+  }
+};
+
+module.exports = index;
